@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.UI;
 using System.Collections.Generic;
 
 namespace CardGame
@@ -10,16 +9,16 @@ namespace CardGame
         public GameObject mapUI;
         
         // 战斗UI元素
-        public Text playerHealthText;
-        public Text playerShieldText;
-        public Text playerManaText;
-        public Text monsterHealthText;
-        public Text monsterNameText;
+        public UnityEngine.UI.Text playerHealthText;
+        public UnityEngine.UI.Text playerShieldText;
+        public UnityEngine.UI.Text playerManaText;
+        public UnityEngine.UI.Text monsterHealthText;
+        public UnityEngine.UI.Text monsterNameText;
         public Transform handPanel;
         public Transform cardSlotPanel;
         public Transform skillPanel;
         public Transform chargedSkillPanel;
-        public Button endTurnButton;
+        public UnityEngine.UI.Button endTurnButton;
         
         // 地图UI元素
         public Transform mapNodePanel;
@@ -105,7 +104,7 @@ namespace CardGame
                 cardObj.transform.localScale = Vector3.one;
                 
                 // 添加点击事件
-                Button cardButton = cardObj.GetComponent<Button>();
+                UnityEngine.UI.Button cardButton = cardObj.GetComponent<UnityEngine.UI.Button>();
                 cardButton.onClick.AddListener(() => OnCardClick(card));
             }
         }
@@ -135,7 +134,7 @@ namespace CardGame
                     emptySlot.transform.SetParent(cardSlotPanel);
                     emptySlot.transform.localScale = Vector3.one * 0.8f;
                     
-                    Image slotImage = emptySlot.AddComponent<Image>();
+                    UnityEngine.UI.Image slotImage = emptySlot.AddComponent<UnityEngine.UI.Image>();
                     slotImage.color = new Color(0.2f, 0.2f, 0.2f, 0.5f);
                     
                     RectTransform rect = emptySlot.GetComponent<RectTransform>();
@@ -159,10 +158,10 @@ namespace CardGame
                 skillObj.transform.SetParent(skillPanel);
                 skillObj.transform.localScale = Vector3.one;
                 
-                Button skillButton = skillObj.AddComponent<Button>();
-                Text skillText = skillObj.AddComponent<Text>();
+                UnityEngine.UI.Button skillButton = skillObj.AddComponent<UnityEngine.UI.Button>();
+                UnityEngine.UI.Text skillText = skillObj.AddComponent<UnityEngine.UI.Text>();
                 skillText.text = $"{skill.name}\n{string.Join("→", skill.effects)}";
-                skillText.alignment = TextAnchor.MiddleCenter;
+                skillText.alignment = UnityEngine.TextAnchor.MiddleCenter;
                 
                 // 添加点击事件
                 skillButton.onClick.AddListener(() => OnSkillClick(skill));
@@ -184,10 +183,10 @@ namespace CardGame
                 skillObj.transform.SetParent(chargedSkillPanel);
                 skillObj.transform.localScale = Vector3.one;
                 
-                Button skillButton = skillObj.AddComponent<Button>();
-                Text skillText = skillObj.AddComponent<Text>();
+                UnityEngine.UI.Button skillButton = skillObj.AddComponent<UnityEngine.UI.Button>();
+                UnityEngine.UI.Text skillText = skillObj.AddComponent<UnityEngine.UI.Text>();
                 skillText.text = $"蓄力: {battleState.chargedSkill.name}";
-                skillText.alignment = TextAnchor.MiddleCenter;
+                skillText.alignment = UnityEngine.TextAnchor.MiddleCenter;
                 
                 // 添加点击事件
                 skillButton.onClick.AddListener(() => battleManager.UseChargedSkill());
@@ -209,10 +208,10 @@ namespace CardGame
                 nodeObj.transform.SetParent(mapNodePanel);
                 nodeObj.transform.localScale = Vector3.one;
                 
-                Button nodeButton = nodeObj.AddComponent<Button>();
-                Text nodeText = nodeObj.AddComponent<Text>();
+                UnityEngine.UI.Button nodeButton = nodeObj.AddComponent<UnityEngine.UI.Button>();
+                UnityEngine.UI.Text nodeText = nodeObj.AddComponent<UnityEngine.UI.Text>();
                 nodeText.text = $"{node.name}\n{node.type}";
-                nodeText.alignment = TextAnchor.MiddleCenter;
+                nodeText.alignment = UnityEngine.TextAnchor.MiddleCenter;
                 
                 // 设置按钮状态
                 nodeButton.interactable = node.isUnlocked;
@@ -227,8 +226,8 @@ namespace CardGame
         {
             GameObject cardObj = new GameObject(card.name);
             
-            Button button = cardObj.AddComponent<Button>();
-            Text text = cardObj.AddComponent<Text>();
+            UnityEngine.UI.Button button = cardObj.AddComponent<UnityEngine.UI.Button>();
+            UnityEngine.UI.Text text = cardObj.AddComponent<UnityEngine.UI.Text>();
             
             // 设置卡牌文本
             string cardTypeText = "";
@@ -249,7 +248,7 @@ namespace CardGame
             }
             
             text.text = $"{card.name}\n{cardTypeText}: {card.value}\n费用: {card.cost}";
-            text.alignment = TextAnchor.MiddleCenter;
+            text.alignment = UnityEngine.TextAnchor.MiddleCenter;
             
             // 设置卡牌大小
             RectTransform rect = cardObj.GetComponent<RectTransform>();
