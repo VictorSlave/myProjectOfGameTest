@@ -5,278 +5,146 @@ namespace CardGame
 {
     public class UIManager : MonoBehaviour
     {
-        public GameObject battleUI;
-        public GameObject mapUI;
-        
-        // 战斗UI元素
-        public UnityEngine.UI.Text playerHealthText;
-        public UnityEngine.UI.Text playerShieldText;
-        public UnityEngine.UI.Text playerManaText;
-        public UnityEngine.UI.Text monsterHealthText;
-        public UnityEngine.UI.Text monsterNameText;
-        public Transform handPanel;
-        public Transform cardSlotPanel;
-        public Transform skillPanel;
-        public Transform chargedSkillPanel;
-        public UnityEngine.UI.Button endTurnButton;
-        
-        // 地图UI元素
-        public Transform mapNodePanel;
-        
         private BattleState battleState => GameManager.Instance.battleState;
         private BattleManager battleManager;
+        private bool showMap = true;
         
         private void Start()
         {
             battleManager = GetComponent<BattleManager>();
-            endTurnButton.onClick.AddListener(() => battleManager.EndPlayerTurn());
-            
-            // 初始显示地图界面
-            ShowMapUI();
         }
         
-        private void Update()
+        private void OnGUI()
         {
-            if (battleUI.activeSelf)
+            if (showMap)
             {
-                UpdateBattleUI();
+                DrawMapUI();
             }
-            else if (mapUI.activeSelf)
+            else
             {
-                UpdateMapUI();
+                DrawBattleUI();
             }
         }
         
-        public void ShowBattleUI()
+        private void DrawMapUI()
         {
-            battleUI.SetActive(true);
-            mapUI.SetActive(false);
-            UpdateBattleUI();
-        }
-        
-        public void ShowMapUI()
-        {
-            battleUI.SetActive(false);
-            mapUI.SetActive(true);
-            UpdateMapUI();
-        }
-        
-        private void UpdateBattleUI()
-        {
-            // 更新玩家状态
-            playerHealthText.text = $"生命值: {battleState.player.currentHealth}/{battleState.player.maxHealth}";
-            playerShieldText.text = $"护盾: {battleState.player.shield}";
-            playerManaText.text = $"费用: {battleState.player.currentMana}/{battleState.player.maxMana}";
+            GUI.Box(new Rect(10, 10, 300, 400), "地图");
             
-            // 更新怪物状态
+            int y = 40;
+            foreach (MapNode node in GameManager.Instance.mapNodes)
+            {
+                bool isUnlocked = node.isUnlocked;
+                GUI.enabled = isUnlocked;
+                
+                if (GUI.Button(new Rect(20, y, 280, 40), $"{node.name} ({node.type})") && isUnlocked)
+                {
+                    // 移动到节点
+                    GameManager.Instance.MoveToNode(node.id);
+                    // 显示战斗界面
+                    showMap = false;
+                }
+                
+                y += 50;
+            }
+            
+            GUI.enabled = true;
+        }
+        
+        private void DrawBattleUI()
+        {
+            // 玩家状态
+            GUI.Box(new Rect(10, 10, 300, 150), "玩家状态");
+            GUI.Label(new Rect(20, 40, 280, 20), $"生命值: {battleState.player.currentHealth}/{battleState.player.maxHealth}");
+            GUI.Label(new Rect(20, 60, 280, 20), $"护盾: {battleState.player.shield}");
+            GUI.Label(new Rect(20, 80, 280, 20), $"费用: {battleState.player.currentMana}/{battleState.player.maxMana}");
+            
+            // 怪物状态
             if (battleState.monster != null)
             {
-                monsterNameText.text = battleState.monster.name;
-                monsterHealthText.text = $"生命值: {battleState.monster.currentHealth}/{battleState.monster.maxHealth}";
+                GUI.Box(new Rect(320, 10, 300, 100), "怪物状态");
+                GUI.Label(new Rect(330, 40, 280, 20), $"名称: {battleState.monster.name}");
+                GUI.Label(new Rect(330, 60, 280, 20), $"生命值: {battleState.monster.currentHealth}/{battleState.monster.maxHealth}");
             }
             
-            // 更新手牌
-            UpdateHandCards();
-            
-            // 更新横槽
-            UpdateCardSlot();
-            
-            // 更新技能
-            UpdateSkills();
-            
-            // 更新蓄力技能
-            UpdateChargedSkill();
-        }
-        
-        private void UpdateHandCards()
-        {
-            // 清空手牌面板
-            foreach (Transform child in handPanel)
-            {
-                Destroy(child.gameObject);
-            }
-            
-            // 创建手牌
+            // 手牌
+            GUI.Box(new Rect(10, 170, 610, 150), "手牌");
+            int handX = 20;
             foreach (Card card in battleState.player.hand)
             {
-                GameObject cardObj = CreateCardUI(card);
-                cardObj.transform.SetParent(handPanel);
-                cardObj.transform.localScale = Vector3.one;
-                
-                // 添加点击事件
-                UnityEngine.UI.Button cardButton = cardObj.GetComponent<UnityEngine.UI.Button>();
-                cardButton.onClick.AddListener(() => OnCardClick(card));
-            }
-        }
-        
-        private void UpdateCardSlot()
-        {
-            // 清空横槽面板
-            foreach (Transform child in cardSlotPanel)
-            {
-                Destroy(child.gameObject);
+                if (GUI.Button(new Rect(handX, 200, 100, 120), $"{card.name}\n{GetCardTypeText(card.type)}: {card.value}\n费用: {card.cost}"))
+                {
+                    // 直接放入最后位置
+                    battleManager.PlayCard(card, battleState.cardSlot.Count);
+                }
+                handX += 110;
             }
             
-            // 创建横槽卡牌
+            // 横槽
+            GUI.Box(new Rect(10, 330, 610, 120), "横槽");
+            int slotX = 20;
             for (int i = 0; i < BattleManager.CARD_SLOT_MAX_LENGTH; i++)
             {
                 if (i < battleState.cardSlot.Count)
                 {
                     Card card = battleState.cardSlot[i];
-                    GameObject cardObj = CreateCardUI(card);
-                    cardObj.transform.SetParent(cardSlotPanel);
-                    cardObj.transform.localScale = Vector3.one * 0.8f;
+                    GUI.Button(new Rect(slotX, 360, 50, 80), $"{GetCardTypeText(card.type)}");
                 }
                 else
                 {
-                    // 创建空槽位
-                    GameObject emptySlot = new GameObject("EmptySlot");
-                    emptySlot.transform.SetParent(cardSlotPanel);
-                    emptySlot.transform.localScale = Vector3.one * 0.8f;
-                    
-                    UnityEngine.UI.Image slotImage = emptySlot.AddComponent<UnityEngine.UI.Image>();
-                    slotImage.color = new Color(0.2f, 0.2f, 0.2f, 0.5f);
-                    
-                    RectTransform rect = emptySlot.GetComponent<RectTransform>();
-                    rect.sizeDelta = new Vector2(80, 120);
+                    GUI.Box(new Rect(slotX, 360, 50, 80), "");
                 }
-            }
-        }
-        
-        private void UpdateSkills()
-        {
-            // 清空技能面板
-            foreach (Transform child in skillPanel)
-            {
-                Destroy(child.gameObject);
+                slotX += 60;
             }
             
-            // 创建技能按钮
+            // 技能
+            GUI.Box(new Rect(10, 460, 300, 150), "技能");
+            int skillY = 490;
             foreach (Skill skill in battleState.skills)
             {
-                GameObject skillObj = new GameObject(skill.name);
-                skillObj.transform.SetParent(skillPanel);
-                skillObj.transform.localScale = Vector3.one;
-                
-                UnityEngine.UI.Button skillButton = skillObj.AddComponent<UnityEngine.UI.Button>();
-                UnityEngine.UI.Text skillText = skillObj.AddComponent<UnityEngine.UI.Text>();
-                skillText.text = $"{skill.name}\n{string.Join("→", skill.effects)}";
-                skillText.alignment = UnityEngine.TextAnchor.MiddleCenter;
-                
-                // 添加点击事件
-                skillButton.onClick.AddListener(() => OnSkillClick(skill));
-            }
-        }
-        
-        private void UpdateChargedSkill()
-        {
-            // 清空蓄力技能面板
-            foreach (Transform child in chargedSkillPanel)
-            {
-                Destroy(child.gameObject);
+                if (GUI.Button(new Rect(20, skillY, 280, 30), $"{skill.name}: {string.Join("→", skill.effects)}"))
+                {
+                    // 默认使用施放模式
+                    battleManager.UseSkill(skill, SkillMode.Cast);
+                }
+                skillY += 40;
             }
             
-            // 创建蓄力技能按钮
+            // 蓄力技能
             if (battleState.chargedSkill != null)
             {
-                GameObject skillObj = new GameObject("ChargedSkill");
-                skillObj.transform.SetParent(chargedSkillPanel);
-                skillObj.transform.localScale = Vector3.one;
-                
-                UnityEngine.UI.Button skillButton = skillObj.AddComponent<UnityEngine.UI.Button>();
-                UnityEngine.UI.Text skillText = skillObj.AddComponent<UnityEngine.UI.Text>();
-                skillText.text = $"蓄力: {battleState.chargedSkill.name}";
-                skillText.alignment = UnityEngine.TextAnchor.MiddleCenter;
-                
-                // 添加点击事件
-                skillButton.onClick.AddListener(() => battleManager.UseChargedSkill());
+                GUI.Box(new Rect(320, 460, 300, 80), "蓄力技能");
+                if (GUI.Button(new Rect(330, 490, 280, 40), $"使用蓄力技能: {battleState.chargedSkill.name}"))
+                {
+                    battleManager.UseChargedSkill();
+                }
+            }
+            
+            // 结束回合按钮
+            if (GUI.Button(new Rect(320, 550, 300, 50), "结束回合"))
+            {
+                battleManager.EndPlayerTurn();
+            }
+            
+            // 返回地图按钮
+            if (GUI.Button(new Rect(10, 610, 610, 50), "返回地图"))
+            {
+                showMap = true;
             }
         }
         
-        private void UpdateMapUI()
+        private string GetCardTypeText(CardType type)
         {
-            // 清空地图节点面板
-            foreach (Transform child in mapNodePanel)
-            {
-                Destroy(child.gameObject);
-            }
-            
-            // 创建地图节点
-            foreach (MapNode node in GameManager.Instance.mapNodes)
-            {
-                GameObject nodeObj = new GameObject(node.name);
-                nodeObj.transform.SetParent(mapNodePanel);
-                nodeObj.transform.localScale = Vector3.one;
-                
-                UnityEngine.UI.Button nodeButton = nodeObj.AddComponent<UnityEngine.UI.Button>();
-                UnityEngine.UI.Text nodeText = nodeObj.AddComponent<UnityEngine.UI.Text>();
-                nodeText.text = $"{node.name}\n{node.type}";
-                nodeText.alignment = UnityEngine.TextAnchor.MiddleCenter;
-                
-                // 设置按钮状态
-                nodeButton.interactable = node.isUnlocked;
-                
-                // 添加点击事件
-                int nodeId = node.id;
-                nodeButton.onClick.AddListener(() => OnMapNodeClick(nodeId));
-            }
-        }
-        
-        private GameObject CreateCardUI(Card card)
-        {
-            GameObject cardObj = new GameObject(card.name);
-            
-            UnityEngine.UI.Button button = cardObj.AddComponent<UnityEngine.UI.Button>();
-            UnityEngine.UI.Text text = cardObj.AddComponent<UnityEngine.UI.Text>();
-            
-            // 设置卡牌文本
-            string cardTypeText = "";
-            switch (card.type)
+            switch (type)
             {
                 case CardType.Attack:
-                    cardTypeText = "攻击";
-                    text.color = Color.red;
-                    break;
+                    return "攻击";
                 case CardType.Defense:
-                    cardTypeText = "防御";
-                    text.color = Color.blue;
-                    break;
+                    return "防御";
                 case CardType.Heal:
-                    cardTypeText = "治疗";
-                    text.color = Color.green;
-                    break;
+                    return "治疗";
+                default:
+                    return "未知";
             }
-            
-            text.text = $"{card.name}\n{cardTypeText}: {card.value}\n费用: {card.cost}";
-            text.alignment = UnityEngine.TextAnchor.MiddleCenter;
-            
-            // 设置卡牌大小
-            RectTransform rect = cardObj.GetComponent<RectTransform>();
-            rect.sizeDelta = new Vector2(100, 150);
-            
-            return cardObj;
-        }
-        
-        private void OnCardClick(Card card)
-        {
-            // 弹出选择位置的界面
-            // 这里简化处理，直接放入最后位置
-            battleManager.PlayCard(card, battleState.cardSlot.Count);
-        }
-        
-        private void OnSkillClick(Skill skill)
-        {
-            // 弹出选择技能模式的界面
-            // 这里简化处理，默认使用施放模式
-            battleManager.UseSkill(skill, SkillMode.Cast);
-        }
-        
-        private void OnMapNodeClick(int nodeId)
-        {
-            // 移动到节点
-            GameManager.Instance.MoveToNode(nodeId);
-            // 显示战斗界面
-            ShowBattleUI();
         }
     }
 }
